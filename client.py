@@ -12,26 +12,46 @@ def connect_to_server():
 
         target_port = int(target_port)
 
-        #set up a TCP/IP socket
+        # Set up a TCP/IP socket
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
             client_socket.connect((serverhost_ipaddress, target_port))  # Try to connect to the server
-            print("Connected to the server. Type 'quit' to exit.")
-            break  # Exits if successful
+            print("Connected to the server.\n")
+            break  # Exit loop if successful
         except Exception as error:
             print(f"Connection failed: {error}. Please try again.")
 
-    # Continues after connection
+    # Valid queries
+    valid_queries = {
+        "1": "What is the average moisture inside my kitchen fridge in the past three hours?",
+        "2": "What is the average water consumption per cycle in my smart dishwasher?",
+        "3": "Which device consumed more electricity among my three IoT devices?"
+    }
+
     while True:
-        message = input("Enter your message: ")
-        if message.lower() == 'exit':
+        print("\n--- IoT Query Menu ---")
+        print("1. Fridge moisture (last 3 hours)")
+        print("2. Dishwasher water per cycle")
+        print("3. Electricity comparison")
+        print("Type 'exit' to quit")
+        
+        choice = input("Enter your selection (1-3 or 'exit'): ").strip().lower()
+
+        if choice == 'exit':
+            print("Closing client. Goodbye!")
             break
 
+        if choice in valid_queries:
+            message = valid_queries[choice]
+        else:
+            print("Invalid selection. Please try again.")
+            continue
+
         try:
-            client_socket.send(message.encode('utf-8'))  # Sends the message to the server
+            client_socket.send(message.encode('utf-8'))  # Send the message to the server
             reply = client_socket.recv(1024)  # Wait for the server's reply
-            print(f"Server's reply: {reply.decode('utf-8')}")
+            print(f"\nServer's reply: {reply.decode('utf-8')}")
         except Exception as error:
             print(f"Error: {error}")
             break
