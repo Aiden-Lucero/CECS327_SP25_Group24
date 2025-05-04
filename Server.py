@@ -1,127 +1,111 @@
 import socket
 import psycopg2
-from datetime import datetime
-import pytz
+from datetime import datetime, timedelta, timezone
 
-# DB connection setup
-def connect_db():
-    return psycopg2.connect(
-        host="ep-lucky-frog-a5iylka4-pooler.us-east-2.aws.neon.tech",
-        dbname="neondb",
-        user="neondb_owner",
-        password="npg_DyqlpcH3vuL8",
-        port=5432
-    )
+DATABASE_URL = "postgresql://neondb_owner:npg_wnz8jmce2qHh@ep-bitter-pine-a539fzen-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
 
-def get_pst_now():
-    now_utc = datetime.utcnow().replace(tzinfo=pytz.utc)
-    return now_utc.astimezone(pytz.timezone('US/Pacific'))
+DEVICES = {
+    "fridge": "89t-yx1-9k7-s46",
+    "dishwasher": "9e729bba-71f8-44f4-9fb8-db7842e121cf",
+    "fridge_2": "fe97fda9-9b5f-48ae-84dc-f9826711edef"
+}
 
-# Query 1: Fridge Moisture
-def get_avg_moisture():
-    conn = connect_db()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT AVG(length)
-        FROM fridge_data_virtual
-        WHERE topic = 'home/kitchen/fridge'
-        AND time >= NOW() - INTERVAL '3 hours';
-    """)
-    avg = cur.fetchone()[0]
-    conn.close()
-    if avg is None:
-        return "No recent fridge data available."
-    rh = round((avg / 500) * 100, 2)
-    return f"Average fridge moisture (past 3 hrs): {rh}% RH (as of {get_pst_now().strftime('%Y-%m-%d %I:%M %p PST')})"
+def open_connection():
+    try:
+        return psycopg2.connect(DATABASE_URL, sslmode="require")
+    except Exception as error:
+        print(f"DB Connection Error: {error}")
+        return None
 
-# Query 2: Dishwasher Water
-def get_avg_water_usage():
-    conn = connect_db()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT AVG(length)
-        FROM fridge_data_virtual
-        WHERE topic = 'home/kitchen/dishwasher'
-        AND length > 0;
-    """)
-    avg = cur.fetchone()[0]
-    conn.close()
-    if avg is None:
-        return "No dishwasher data available."
-    gallons = round(avg * 0.264172, 2)
-    return f"Average water per cycle: {gallons} gallons"
+def fetch_avg_moisture(cursor):
+    threshold = datetime.now(timezone.utc) - timedelta(hours=3)
+    cursor.execute("""
+        SELECT AVG((payload->>'DHT11-moisture')::float)
+        FROM fridge_virtual
+        WHERE time >= %s
+    """, (threshold,))
+    moisture = cursor.fetchone()
+    return (f"The average moisture inside kitchen fridge in the past three hours is {round(moisture[0], 2)} % RH."
+            if moisture and moisture[0] is not None else
+            "No moisture data available in the past three hours.")
 
-# Query 3: Electricity Comparison
-def compare_electricity():
-    conn = connect_db()
-    cur = conn.cursor()
-    device_topics = {
-        "Fridge 1": "home/kitchen/fridge1",
-        "Fridge 2": "home/kitchen/fridge2",
-        "Dishwasher": "home/kitchen/dishwasher"
+def fetch_avg_water(cursor):
+    threshold = datetime.now(timezone.utc) - timedelta(hours=3)
+    cursor.execute("""
+        SELECT AVG((payload->>'YF-S201 - YFS201-Water')::float)
+        FROM fridge_virtual
+        WHERE time >= %s
+    """, (threshold,))
+    water = cursor.fetchone()
+    return (f"The average water consumption per cycle is {round(water[0] * 0.264172, 2)} gallons."
+            if water and water[0] is not None else
+            "No water usage data available.")
+
+def fetch_electricity(cursor):
+    readings = {}
+    fields = {
+        "fridge": "ACS712 - Electric",
+        "fridge_2": "ACS712 - Electric2",
+        "dishwasher": "ACS712 - Electric3"
     }
-    results = {}
-    for name, topic in device_topics.items():
-        cur.execute("""
-            SELECT SUM(length)
-            FROM fridge_data_virtual
-            WHERE topic = %s;
-        """, (topic,))
-        total = cur.fetchone()[0]
-        if total is None:
-            total = 0
-        kwh = round(total / 1000, 2)
-        results[name] = kwh
-    conn.close()
-    most = max(results, key=results.get)
-    return f"{most} used the most electricity: {results[most]} kWh"
+    for name, sensor in fields.items():
+        cursor.execute("""
+            SELECT SUM((payload->>%s)::float)
+            FROM fridge_virtual
+            WHERE payload->>'parent_asset_uid' = %s
+        """, (sensor, DEVICES[name]))
+        total = cursor.fetchone()
+        readings[name] = total[0] if total and total[0] is not None else 0
 
-#original socket code
-def launch_server():
-    serverhost_ipaddress = '0.0.0.0'
-    listening_port = int(input("Enter the port number for the server: "))
+    top_device = max(readings, key=readings.get)
+    return f"{top_device} consumed the most electricity: {round(readings[top_device], 2)} kWh."
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((serverhost_ipaddress, listening_port))
-    server_socket.listen(5)
+def process_request(query: str, cursor):
+    query = query.lower()
+    if "average moisture" in query:
+        return fetch_avg_moisture(cursor)
+    if "average water" in query:
+        return fetch_avg_water(cursor)
+    if "consumed more electricity" in query:
+        return fetch_electricity(cursor)
+    return ("Sorry, this query cannot be processed. Try one of:") + "\n".join([
+        "1. What is the average moisture inside my kitchen fridge in the past three hours?",
+        "2. What is the average water consumption per cycle in my smart dishwasher?",
+        "3. Which device consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)?"])
 
-    print(f"Server started. Listening on {serverhost_ipaddress}:{listening_port}...")
-
-    while True:
-        client_socket, client_address = server_socket.accept()
-        print(f"Connection established with {client_address}")
+def start_server(host='10.128.0.2', port=4000):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as srv:
+        srv.bind((host, port))
+        srv.listen(5)
+        print(f"Server listening on {host}:{port}")
 
         while True:
+            client, addr = srv.accept()
+            print(f"Connected to {addr}")
+
+            conn = open_connection()
+            if not conn:
+                client.send(b"Database connection failed.")
+                client.close()
+                continue
+
+            cursor = conn.cursor()
             try:
-                message = client_socket.recv(1024)
-                if not message:
-                    break
+                while True:
+                    data = client.recv(5000).decode("utf-8").strip()
+                    if not data or data.lower() in ("exit", "quit"):
+                        print(f"Client {addr} disconnected.")
+                        break
 
-                query = message.decode('utf-8').strip().lower()
-                print(f"Received from {client_address}: {query}")
+                    print(f"Client says: {data}")
+                    response = process_request(data, cursor)
+                    client.send(response.encode("utf-8"))
+            except Exception as ex:
+                print(f"Client error {addr}: {ex}")
+            finally:
+                cursor.close()
+                conn.close()
+                client.close()
 
-                # Assignment 8 query handling
-                if "moisture" in query:
-                    response = get_avg_moisture()
-                elif "water consumption" in query:
-                    response = get_avg_water_usage()
-                elif "electricity" in query or "consumed more" in query:
-                    response = compare_electricity()
-                else:
-                    response = (
-                        "Sorry, this query cannot be processed.\n"
-                        "Please try one of the following:\n"
-                        "- What is the average moisture inside my kitchen fridge in the past three hours?\n"
-                        "- What is the average water consumption per cycle in my smart dishwasher?\n"
-                        "- Which device consumed more electricity among my three IoT devices?"
-                    )
-
-                client_socket.send(response.encode())
-
-            except ConnectionResetError:
-                print(f"Connection lost with {client_address}. Waiting for a new connection.")
-                break
-
-        client_socket.close()
-
-launch_server()
+if __name__ == "__main__":
+    start_server()
