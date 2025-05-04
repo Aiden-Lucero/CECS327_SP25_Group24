@@ -7,7 +7,7 @@ DATABASE_URL = "postgresql://neondb_owner:npg_pzlBau1X0EHR@ep-shiny-cake-a5aimsh
 DEVICES = {
     "fridge": "y9t-tjc-926-i1h",
     "dishwasher": "ed859356-9ac0-4320-8b23-2453160a466c",
-    "fridge_2": "06d2bba7-a708-42c7-b70b-db4c1a40e67f"
+    "fridge2": "06d2bba7-a708-42c7-b70b-db4c1a40e67f"
 }
 
 def open_connection():
@@ -21,7 +21,7 @@ def fetch_avg_moisture(cursor):
     threshold = datetime.now(timezone.utc) - timedelta(hours=3)
     cursor.execute("""
         SELECT AVG((payload->>'DHT11-moisture')::float)
-        FROM fridge_virtual
+        FROM fridge_data_virtual
         WHERE time >= %s
     """, (threshold,))
     moisture = cursor.fetchone()
@@ -33,7 +33,7 @@ def fetch_avg_water(cursor):
     threshold = datetime.now(timezone.utc) - timedelta(hours=3)
     cursor.execute("""
         SELECT AVG((payload->>'YF-S201 - YFS201-Water')::float)
-        FROM fridge_virtual
+        FROM fridge_data_virtual
         WHERE time >= %s
     """, (threshold,))
     water = cursor.fetchone()
@@ -44,14 +44,14 @@ def fetch_avg_water(cursor):
 def fetch_electricity(cursor):
     readings = {}
     fields = {
-        "fridge": "ACS712 - Electric",
-        "fridge_2": "ACS712 - Electric2",
-        "dishwasher": "ACS712 - Electric3"
+        "fridge": "ACS712 - ACS712-electricity",
+        "fridge2": "ACS712-electricity2",
+        "dishwasher": "ACS712-electricity3"
     }
     for name, sensor in fields.items():
         cursor.execute("""
             SELECT SUM((payload->>%s)::float)
-            FROM fridge_virtual
+            FROM fridge_data_virtual
             WHERE payload->>'parent_asset_uid' = %s
         """, (sensor, DEVICES[name]))
         total = cursor.fetchone()
