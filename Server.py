@@ -2,7 +2,7 @@ import socket
 import psycopg2
 from datetime import datetime, timedelta, timezone
 
-DATABASE_URL = "postgresql://neondb_owner:npg_wnz8jmce2qHh@ep-bitter-pine-a539fzen-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
+DATABASE_URL = "postgresql://neondb_owner:npg_pzlBau1X0EHR@ep-shiny-cake-a5aimshz-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
 
 DEVICES = {
     "fridge": "y9t-tjc-926-i1h",
