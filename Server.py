@@ -5,9 +5,9 @@ from datetime import datetime, timedelta, timezone
 DATABASE_URL = "postgresql://neondb_owner:npg_wnz8jmce2qHh@ep-bitter-pine-a539fzen-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
 
 DEVICES = {
-    "fridge": "89t-yx1-9k7-s46",
-    "dishwasher": "9e729bba-71f8-44f4-9fb8-db7842e121cf",
-    "fridge_2": "fe97fda9-9b5f-48ae-84dc-f9826711edef"
+    "fridge": "y9t-tjc-926-i1h",
+    "dishwasher": "ed859356-9ac0-4320-8b23-2453160a466c",
+    "fridge_2": "06d2bba7-a708-42c7-b70b-db4c1a40e67f"
 }
 
 def open_connection():
