@@ -20,7 +20,7 @@ def open_connection():
 def fetch_avg_moisture(cursor):
     threshold = datetime.now(timezone.utc) - timedelta(hours=3)
     cursor.execute("""
-        SELECT AVG((payload->>'DHT11-moisture')::float)
+        SELECT AVG((payload->>'DHT11 - DHT11-moisture')::float)
         FROM fridge_data_virtual
         WHERE time >= %s
     """, (threshold,))
@@ -32,7 +32,7 @@ def fetch_avg_moisture(cursor):
 def fetch_avg_water(cursor):
     threshold = datetime.now(timezone.utc) - timedelta(hours=3)
     cursor.execute("""
-        SELECT AVG((payload->>'YF-S201 - YFS201-Water')::float)
+        SELECT AVG((payload->>'YF-S201-water')::float)
         FROM fridge_data_virtual
         WHERE time >= %s
     """, (threshold,))
