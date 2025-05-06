@@ -1,61 +1,59 @@
 import socket
 
-def connect_to_server():
-    while True:  # Retries using loop
-        serverhost_ipaddress = input("Enter the server IP address: ")
-        target_port = input("Enter the server port number: ")
+def get_server_details():
+    ip = input("Enter server IP address: ").strip()
+    port_input = input("Enter server port: ").strip()
+    try:
+        port = int(port_input)
+        return ip, port
+    except ValueError:
+        print("Port must be an integer.")
+        exit()
 
-        # Validate the port number input
-        if not target_port.isdigit() or not 0 < int(target_port) < 65536:
-            print("Invalid port. Please enter a number between 1 and 65535.")
-            continue
+def create_connection(ip, port):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((ip, port))
+        return s
+    except socket.error as err:
+        print(f"Socket Error: {err}")
+        exit()
 
-        target_port = int(target_port)
+def display_options(options):
+    print("\nSelect a query by entering its number:")
+    for i, opt in enumerate(options, 1):
+        print(f"{i}. {opt}")
 
-        # Set up a TCP/IP socket
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def main():
+    queries = [
+        "What is the average moisture inside my kitchen fridge in the past three hours?",
+        "What is the average water consumption per cycle in my smart dishwasher?",
+        "Which device consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)?"
+    ]
 
-        try:
-            client_socket.connect((serverhost_ipaddress, target_port))  # Try to connect to the server
-            print("Connected to the server.\n")
-            break  # Exit loop if successful
-        except Exception as error:
-            print(f"Connection failed: {error}. Please try again.")
-
-    # Valid queries
-    valid_queries = {
-        "1": "What is the average moisture inside my kitchen fridge in the past three hours?",
-        "2": "What is the average water consumption per cycle in my smart dishwasher?",
-        "3": "Which device consumed more electricity among my three IoT devices?"
-    }
+    ip, port = get_server_details()
+    sock = create_connection(ip, port)
 
     while True:
-        print("\n--- IoT Query Menu ---")
-        print("1. Fridge moisture (last 3 hours)")
-        print("2. Dishwasher water per cycle")
-        print("3. Electricity comparison")
-        print("Type 'exit' to quit")
-        
-        choice = input("Enter your selection (1-3 or 'exit'): ").strip().lower()
+        display_options(queries)
+        user_input = input("\nEnter query number or type 'exit' to quit: ").strip().lower()
 
-        if choice == 'exit':
-            print("Closing client. Goodbye!")
+        if user_input == 'exit':
+            sock.send(b'exit')
             break
-
-        if choice in valid_queries:
-            message = valid_queries[choice]
-        else:
-            print("Invalid selection. Please try again.")
-            continue
 
         try:
-            client_socket.send(message.encode('utf-8'))  # Send the message to the server
-            reply = client_socket.recv(1024)  # Wait for the server's reply
-            print(f"\nServer's reply: {reply.decode('utf-8')}")
-        except Exception as error:
-            print(f"Error: {error}")
-            break
+            index = int(user_input)
+            if 1 <= index <= len(queries):
+                sock.send(queries[index - 1].encode('utf-8'))
+                reply = sock.recv(4096).decode('utf-8')
+                print(f"Server Response: {reply}")
+            else:
+                print("Number out of range. Please choose a valid option.")
+        except ValueError:
+            print("Invalid input. Enter a number corresponding to a query.")
 
-    client_socket.close()
+    sock.close()
 
-connect_to_server()
+if __name__ == "__main__":
+    main()
