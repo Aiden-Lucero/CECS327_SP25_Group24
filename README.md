@@ -1,5 +1,5 @@
 # CECS 327 – Assignment 8: IoT TCP Server + Client
-#Stephanie Figueroa and Aiden 
+#Stephanie Figueroa and Aiden Lucero
 
 #Project Description
 This project is an end-to-end IoT system that uses a TCP client-server model to process 
@@ -37,7 +37,7 @@ Make sure you have Python installed and Neon credentials set in 'server.py`
 '''bash
 python server.py
 
-youll be asked to enter a port number (7777)
+youll be asked to enter a port number (4000)
 
 #2. Start the client
 '''bash
