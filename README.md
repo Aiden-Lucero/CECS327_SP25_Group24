@@ -54,16 +54,16 @@ you'll be asked to enter the server's IP address and the same port number used i
 #3. choose from the Menu
 
 You’ll be shown a numbered menu to select one of the following:
-What is the average moisture inside my kitchen fridge in the past three hours?
-What is the average water consumption per cycle in my smart dishwasher?
-Which device consumed more electricity among my three IoT devices?
-If you enter an unsupported query, the server will provide guidance on valid options.
+- What is the average moisture inside my kitchen fridge in the past three hours?
+- What is the average water consumption per cycle in my smart dishwasher?
+- Which device consumed more electricity among my three IoT devices?
+- If you enter an unsupported query, the server will provide guidance on valid options.
 
 #File structure
 
-server.py -Main server script
-client.py - client that sends queries 
-README.md - what you are reading now
+- server.py -Main server script
+- client.py - client that sends queries 
+- README.md - what you are reading now
 
 #Iot notes
 
