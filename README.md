@@ -2,6 +2,7 @@
 #Stephanie Figueroa and Aiden Lucero
 
 #Project Description
+
 This project implements a full-stack Iot system using a TCP client-server model to respond to real-world sensor data queries. The server connects to a Neon-hosted PostgreSQL database populated by the Dataniz Iot simulator. The system handles three predefined queries about moisture, water usage, and electricity consumption from smart appliances:
 - Average moisture inside the kitchen fridge (last 3 hours)
 - Average water consumption per dishwasher cycle
