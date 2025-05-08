@@ -33,23 +33,23 @@ This project implements a full-stack Iot system using a TCP client-server model 
 #How to Run the Project
 
 #1. Start the Server
-Make sure you have Python installed and 'psycopg2' and 'pytz' installed:
+-Make sure you have Python installed and 'psycopg2' and 'pytz' installed:
 
-'''bash
-pip install psycopg2-binary pytz
+- '''bash
+- pip install psycopg2-binary pytz
 
-#then run the server:
-python server.py
+- #then run the server:
+- python server.py
 
-#youll be asked to enter a port number 
-(4000)
+- #youll be asked to enter a port number 
+- (4000)
 
-#2. Start the client
-#Then run server
-'''bash
-python client.py
+- #2. Start the client
+- #Then run server
+- '''bash
+- python client.py
 
-you'll be asked to enter the server's IP address and the same port number used in the server
+- you'll be asked to enter the server's IP address and the same port number used in the server
 
 #3. choose from the Menu
 
